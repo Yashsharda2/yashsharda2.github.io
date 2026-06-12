@@ -1,93 +1,337 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yash Sharda | Portfolio</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yash Sharda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bitcount+Single+Regular&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --border: #e8e8e8;
+            --accent: #cc0000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Courier New", Courier, monospace;
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 2.5rem 1.5rem;
+        }
+
+        .container {
+            max-width: 660px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 4.5rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        nav a:hover {
+            opacity: 0.7;
+        }
+
+        nav a.active {
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.visible {
+            display: block;
+        }
+
+        .home-name {
+            font-family: "Bungee", sans-serif;
+            font-size: 30px;
+            font-weight: 400;
+            margin-bottom: 0.3rem;
+            color: var(--text);
+        }
+
+        .home-role {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 2.5rem;
+        }
+
+        .bio {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text);
+            margin-bottom: 2.5rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.25rem;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-links a {
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .about-text p {
+            font-size: 15px;
+            line-height: 1.85;
+            color: var(--text);
+            margin-bottom: 1.4rem;
+        }
+
+        .about-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .now-heading {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 1.75rem;
+        }
+
+        .now-project {
+            border-left: 2px solid var(--text);
+            padding-left: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .now-project-title {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 17px;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .now-project-desc {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .now-extra {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.7;
+            margin-top: 1.5rem;
+        }
+
+        .wishlist {
+            margin-top: 3rem;
+            padding-top: 1.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .wishlist-heading {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 1.25rem;
+        }
+
+        .wishlist-items {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .wishlist-items li {
+            font-size: 14px;
+            color: var(--text);
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+        }
+
+        .wishlist-items li::before {
+            content: "—";
+            color: var(--border);
+            flex-shrink: 0;
+        }
+
+        .blog-heading {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 1.75rem;
+        }
+
+        .blog-empty {
+            font-size: 15px;
+            color: var(--text);
+        }
+
+        .blog-card {
+            border: 1px solid var(--border);
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 1rem;
+            text-decoration: none;
+            display: block;
+            color: var(--text);
+            transition: border-color 0.15s;
+        }
+
+        .blog-card:hover {
+            border-color: var(--text);
+        }
+
+        .blog-card-title {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 15px;
+            font-weight: 400;
+            margin-bottom: 0.3rem;
+            color: var(--text);
+        }
+
+        .blog-card-desc {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .blog-card-date {
+            font-size: 12px;
+            color: var(--text);
+            margin-top: 0.6rem;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
+<div class="container">
+
     <header>
-      <h1>Yash Sharda</h1>
-      <p class="subtitle">2nd-year Electronics & Communication Engineering Student</p>
+        <nav>
+            <a class="nav-link active" data-target="home">Home</a>
+            <a class="nav-link" data-target="about">About</a>
+            <a class="nav-link" data-target="now">Now</a>
+            <a class="nav-link" data-target="blog">Blog</a>
+        </nav>
     </header>
 
-<section>
-  <h2>About Me</h2>
-  <p>
-    Hi, I'm Yash Sharda — 2nd year ECE student, and most of my time goes into hardware. FPGAs are my main thing. Getting my first dev board was genuinely one of those moments that changed how I think about building things. Since then I've been hooked — SoCs, MCUs, FPGAs, ARM boards — I love getting my hands on different hardware and figuring out what makes each one tick.
-    Collecting dev boards might be a problem at this point.
-    I also work with embedded systems and hardware acceleration — and that's the thing that led me to Spiking Neural Networks, which honestly blew my mind.
-  </p>
-</section>
+    <div id="home" class="section visible">
+        <h1 class="home-name">Yash Sharda</h1>
+        <p class="home-role">ECE Undergrad</p>
+        <p class="bio">
+            Hi, I'm Yash — a 3rd year ECE student, and most of my time goes into hardware.
+            FPGAs are my main thing. Getting my first dev board was genuinely one of those moments
+            that changed how I think about building things. Since then I've been hooked —
+            SoCs, MCUs, FPGAs, ARM boards — I love getting my hands on different hardware
+            and figuring out what makes each one tick.
+        </p>
+        <div class="footer-links">
+            <a href="https://github.com/Yashsharda2" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://x.com/YashSharda_006" target="_blank" rel="noopener">Twitter</a>
+           
+        </div>
+    </div>
 
-    <section>
-      <h2>Projects</h2>
+    <div id="about" class="section">
+        <p class="now-heading">About me</p>
+        <div class="about-text">
+            <p>Picked ECE since hardware just made sense to me. Started out with the basics — microcontrollers, simple circuits, just figuring out how stuff actually works. Then I got a Vaaman board and it got me really hooked. Like building hardware itself. FPGAs are super niche, but that's the point.</p>
+            <p>Been looking at more general ECE stuff lately — digital design, communication, control systems, analog. Analog is brutal. It never behaves how you want it to, and it takes forever to get a real feel for it. But you gotta understand it if you want to work with real hardware and not just theory.</p>
+            <p>Not entirely sure what's next. Just want to keep working close to the metal — FPGAs, embedded. For now, just working on whatever is hard enough to keep me busy.</p>
+        </div>
+    </div>
 
-      <div class="project">
-        <h3>FIR & FFT Signal Processing Engine
-          <a href="https://github.com/Yashsharda2/DSP_in_FPGA" target="_blank">[GitHub]</a>
-        </h3>
-        <p>Implemented high-performance DSP blocks using fixed-point arithmetic for real-time signal analysis.</p>
-        <ul>
-          <li>Designed a 16-tap low-pass FIR filter with symmetric coefficients for linear phase response.</li>
-          <li>Implemented a 16-point Radix-2 DIF FFT utilizing Q1.15 fixed-point arithmetic to minimize quantization error.</li>
-          <li>Optimized butterfly structures for resource efficiency on FPGA fabric, ensuring high-accuracy rounding across both modules.</li>
-        </ul>
-      </div>
+    <div id="now" class="section">
+        <p class="now-heading">Now</p>
+        <div class="now-project">
+            <div class="now-project-title">Tiny YOLO on FPGA</div>
+            <div class="now-project-desc">
+                Building a real-time object detection pipeline on the Zynq-7020. The idea is to
+                run the full Tiny YOLO inference in hardware — I'm designing the convolution engine
+                from scratch in RTL rather than using a vendor IP, with the PL handling all the
+                conv layers and the PS doing box decoding and NMS.
+            </div>
+        </div>
+        <p class="now-extra">Also learning PCB design.</p>
+        <div class="wishlist">
+            <p class="wishlist-heading">Things I want</p>
+            <ul class="wishlist-items">
+                <li>Oscilloscope</li>
+                <li>Camera module</li>
+                <li>Zynq board</li>
+            </ul>
+        </div>
+    </div>
 
-      <div class="project">
-        <h3>Real-Time Image Processing Pipeline 
-          <a href="https://github.com/Yashsharda2/fpga-image-processing" target="_blank">[GitHub]</a>
-        </h3>
-        <p>Building a real-time image processing pipeline on Vaaman SBC using Verilog.</p>
-        <ul>
-          <li>Implemented core operations including brightness adjustment, grayscale conversion, and binary thresholding.</li>
-          <li>Designed a <strong>pipelined Sobel edge detector</strong> on a 400-wide grayscale stream using dual line buffers and Manhattan gradient approximation.</li>
-        </ul>
-      </div>
+    <div id="blog" class="section">
+        <p class="blog-heading">Blog</p>
 
-      <div class="project">
-        <h3>SPI Communication Protocol Implementation 
-          <a href="https://github.com/Yashsharda2/SPI" target="_blank">[GitHub]</a>
-        </h3>
-        <p>Implemented a high-speed, full-duplex SPI Master controller in Verilog.</p>
-        <ul>
-          <li>Developed a synthesizable SPI state machine, achieving a stable <strong>5MHz SCLK</strong> from a 50MHz PLL-generated system clock.</li>
-          <li>Designed a <strong>physical loopback interface</strong> on the Vaaman board, synchronizing RTL signals with SoC GPIOs.</li>
-          <li>Achieved reliable 8-bit data transfers between the FPGA fabric and the RK3399 SoC.</li>
-        </ul>
-      </div>
+        <!--
+            TO ADD A POST: copy the block below, fill in href, title, desc, and date.
+            Save your post as posts/your-post.html in the same repo.
 
-      <div class="project">
-        <h3>RP2040 Pico Music Player 
-          <a href="https://github.com/Yashsharda2/RP2040_MUSIC_PLAYER" target="_blank">[GitHub]</a>
-        </h3>
-        <ul>
-          <li>Built a WAV audio player using DAC/PWM-based output on the RP2040.</li>
-          <li>Interfaced rotary encoders and an SPI display for a real-time user interface.</li>
-        </ul>
-      </div>
-    </section>
+            <a class="blog-card" href="posts/your-post.html">
+                <div class="blog-card-title">Your post title</div>
+                <div class="blog-card-desc">One line about what the post is about.</div>
+                <div class="blog-card-date">Jun 2026</div>
+            </a>
+        -->
 
-    <section>
-      <h2>Technical Skills</h2>
-      <div class="skills-grid">
-        <p><strong>Languages:</strong> Verilog, SystemVerilog</p>
-        <p><strong>Tools:</strong> Xilinx Vivado, Efinity, Yosys, nextpnr, KiCad, Git/GitHub</p>
-        <p><strong>Hardware:</strong> Vaaman SBC (Trion T120), Lattice iCE40UP5K, Zynq-7000 SoC, RP2040, ESP32 </p>
-      </div>
-    </section>
+        <p class="blog-empty">hmm I'm writing it.</p>
+    </div>
 
-    <footer>
-      <p>
-        <a href="https://github.com/Yashsharda2" target="_blank">GitHub</a> | 
-        <a href="https://www.linkedin.com/in/yash-sharda" target="_blank">LinkedIn</a>
-      </p>
-    </footer>
-  </div>
+</div>
+
+<script>
+    const links = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('.section');
+
+    links.forEach(link => {
+        link.addEventListener('click', () => {
+            links.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            sections.forEach(s => s.classList.remove('visible'));
+            document.getElementById(link.dataset.target).classList.add('visible');
+        });
+    });
+</script>
 
 </body>
 </html>
