@@ -130,6 +130,18 @@
             margin-bottom: 1.75rem;
         }
 
+        .now-section-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+            margin-top: 2.25rem;
+            color: var(--text);
+        }
+
+        .now-section-title:first-of-type {
+            margin-top: 0;
+        }
+
         .now-project {
             border-left: 2px solid var(--text);
             padding-left: 1.25rem;
@@ -145,9 +157,18 @@
         }
 
         .now-project-desc {
-            font-size: 14px;
+            font-size: 15px;
             color: var(--text);
-            line-height: 1.7;
+            line-height: 1.85;
+        }
+
+        .now-project-desc a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .now-project-desc a:hover {
+            text-decoration: underline;
         }
 
         .now-extra {
@@ -237,6 +258,46 @@
             color: var(--text);
             margin-top: 0.6rem;
         }
+
+        /* Projects section - credit card style tiles */
+        .projects-heading {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 1.75rem;
+        }
+
+        .project-card {
+            display: block;
+            text-decoration: none;
+            color: var(--text);
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem 1.6rem;
+            margin-bottom: 1.25rem;
+            transition: border-color 0.15s, transform 0.15s;
+        }
+
+        .project-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .project-card-title {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 19px;
+            font-weight: 400;
+            margin-bottom: 0.6rem;
+            color: var(--text);
+        }
+
+        .project-card-desc {
+            font-size: 14px;
+            line-height: 1.75;
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
@@ -248,6 +309,7 @@
             <a class="nav-link active" data-target="home">Home</a>
             <a class="nav-link" data-target="about">About</a>
             <a class="nav-link" data-target="now">Now</a>
+            <a class="nav-link" data-target="projects">Projects</a>
             <a class="nav-link" data-target="blog">Blog</a>
         </nav>
     </header>
@@ -280,24 +342,54 @@
 
     <div id="now" class="section">
         <p class="now-heading">Now</p>
-        <div class="now-project">
-            <div class="now-project-title">Tiny YOLO on FPGA</div>
-            <div class="now-project-desc">
-                Building a real-time object detection pipeline on the Zynq-7020. The idea is to
-                run the full Tiny YOLO inference in hardware — I'm designing the convolution engine
-                from scratch in RTL rather than using a vendor IP, with the PL handling all the
-                conv layers and the PS doing box decoding and NMS.
-            </div>
+
+        <p class="now-section-title">Hardware &amp; FPGAs</p>
+        <div class="now-project-desc">
+            I recently got my hands on the <strong>Soan Papdi board</strong>—an iCE40UP5K FPGA-based board designed by Hardik Seth<a href="https://x.com/DIY_With_Hardik" target="_blank" rel="noopener">, who was kind enough to send one my way. I've been spending time diving into the open-source toolchain, running through the example designs, and wrapping my head around how the board works end-to-end before writing my own bitstreams. You can check out the <a href="https://github.com/hardik1975/soan-papdi-examples" target="_blank" rel="noopener">examples repository here</a> (and read more about the board <a href="https://www.ashoktinkeringlabs.com/soan-papdi" target="_blank" rel="noopener">here</a>).
         </div>
-        <p class="now-extra">Also learning PCB design.</p>
+
+        <p class="now-section-title">CORDIC &amp; ASIC Design</p>
+        <div class="now-project-desc">
+            Working on a <strong>CORDIC</strong> implementation right now, rotation and vectoring mode. It's a fun, self-contained problem that's really making me think in hardware terms about maths. It's actually got me seriously considering picking up <strong>ASIC design</strong> next—CORDIC feels like the right thing to start with.
+        </div>
+
+        <p class="now-section-title">PCB Design</p>
+        <div class="now-project-desc">
+            Continuing my journey into PCB design. I already finished a custom macropad, and right now I'm actively working on a <strong>music player PCB</strong>.
+        </div>
+
         <div class="wishlist">
-            <p class="wishlist-heading">Things I want</p>
+            <p class="wishlist-heading">🔭 Wishlist</p>
             <ul class="wishlist-items">
                 <li>Oscilloscope</li>
-                <li>Camera </li>
-                <li>Zynq board</li>
+                <li>3D printer</li>
             </ul>
         </div>
+    </div>
+
+    <div id="projects" class="section">
+        <p class="projects-heading">Projects</p>
+
+        <a class="project-card" href="https://github.com/Yashsharda2/SHRIKE_lite_Project/tree/main/cordic" target="_blank" rel="noopener">
+            <div class="project-card-title">CORDIC on Shrike lite</div>
+            <div class="project-card-desc">
+                CORDIC algorithm implementing rotation mode, computing sin, cos and tan for 0–45° over 7 iterations using Q1.6 fixed-point representation. 
+            </div>
+        </a>
+
+        <a class="project-card" href="https://github.com/hardik1975/soan-papdi-examples/tree/main/02-Max7219_LedMatrix" target="_blank" rel="noopener">
+            <div class="project-card-title">MAX7219 LED Matrix</div>
+            <div class="project-card-desc">
+                Implemented a MAX7219 LED matrix driver on the Soan Papdi board (iCE40UP5K).
+            </div>
+        </a>
+
+        <a class="project-card" href="https://github.com/Yashsharda2/MP3_PCB" target="_blank" rel="noopener">
+            <div class="project-card-title">Music Player PCB</div>
+            <div class="project-card-desc">
+                ESP32-S3 (N8R8) based music player PCB. Audio out through PCM5102 DAC and TPA amplifier, high-speed SD card in 4-bit mode for fast reads, and a proper BMS with battery protection. Currently in progress.
+            </div>
+        </a>
     </div>
 
     <div id="blog" class="section">
