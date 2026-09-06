@@ -63,8 +63,14 @@
             font-size: 26px;
             font-weight: 400;
             line-height: 1.4;
-            margin-bottom: 2.5rem;
+            margin-bottom: 0.6rem;
             color: var(--text);
+        }
+
+        .byline {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 2.5rem;
         }
 
         h2 {
@@ -74,6 +80,7 @@
             margin-top: 2.75rem;
             margin-bottom: 1rem;
             color: var(--text);
+            scroll-margin-top: 1.5rem;
         }
 
         h2:first-of-type {
@@ -168,6 +175,53 @@
             text-align: center;
         }
 
+        .toc {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.1rem 1.4rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .toc-title {
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .toc-title::-webkit-details-marker {
+            display: none;
+        }
+
+        .toc-title::before {
+            content: "▶ ";
+            font-size: 11px;
+        }
+
+        details[open] .toc-title::before {
+            content: "▼ ";
+        }
+
+        .toc ol {
+            list-style: decimal;
+            padding-left: 1.1rem;
+            margin-top: 0.9rem;
+        }
+
+        .toc li {
+            font-size: 14px;
+            margin-bottom: 0.35rem;
+        }
+
+        .toc a {
+            color: var(--text);
+        }
+
+        .toc a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
         .footer-nav {
             margin-top: 3.5rem;
             padding-top: 1.5rem;
@@ -185,8 +239,25 @@
     </header>
 
     <h1 class="post-title">CORDIC on FPGA</h1>
+    <p class="byline">By Yash Sharda</p>
 
-    <h2>CORDIC</h2>
+    <details class="toc">
+        <summary class="toc-title">Table of contents</summary>
+        <ol>
+            <li><a href="#cordic">CORDIC</a></li>
+            <li><a href="#inside-cordic">Inside CORDIC</a></li>
+            <li><a href="#problems">A few problems</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#spi-interface">SPI Interface</a></li>
+            <li><a href="#design-issues">Design issues I ran into</a></li>
+            <li><a href="#results">Results</a></li>
+            <li><a href="#resource-utilization">Resource Utilization</a></li>
+            <li><a href="#what-next">What next</a></li>
+            <li><a href="#repo">Repo</a></li>
+        </ol>
+    </details>
+
+    <h2 id="cordic">CORDIC</h2>
     <p>If we want sine and cosine on an FPGA, the easiest way is a lookup table, maybe combined with linear interpolation, etc. That works, but requires a lot of LUTs and DSP slices for the interpolation math. Which is fine if you have an FPGA with a large number of LUTs, but not the best when you work with resource-constrained FPGAs. I was working with the SOAN PAPDI board, which is based on the iCE40 UP5K with 5280 LUTs, and only 8 DSP blocks, and I wanted this thing to eventually run on FPGAs even smaller, like the Shrike Lite with just 1120 LUTs.</p>
 
     <p>There comes CORDIC: it stands for COordinate Rotation DIgital Computer, invented by Jack E. Volder in 1959 to replace analog resolvers in the B-58 bomber's navigation computer, which needed fast sine/cosine and vector rotations with no floating-point hardware in sight. It computes trigonometric, hyperbolic, and mathematical functions.</p>
@@ -203,8 +274,25 @@
 
     <p>I worked only with a circular coordinate system, rotation mode, since all I needed was sine and cosine of a given angle.</p>
 
-    <h2>Inside CORDIC</h2>
+    <h2 id="inside-cordic">Inside CORDIC</h2>
     <p>Starts by taking an initial vector of a certain length lying along the x-axis and turning it bit by bit until it reaches the desired angle; the x-component of the vector becomes the cosine, and the y-component becomes the sine.</p>
+
+    <pre><code>   y
+   ^
+   |                    *  &lt;- final vector, at angle theta
+   |                 .
+   |              .
+   |           .
+   |        .
+   |     .
+   |  .
+   +------------------------&gt; x
+ (0,0)   start: vector of length K, pointing along +x
+
+ After 15 tiny rotations (45, 26.565, 14.036 ... down to ~0.004 degrees),
+ the vector lands on angle theta.
+   x-component --&gt; cos(theta)
+   y-component --&gt; sin(theta)</code></pre>
 
     <p>Each rotation step follows this update:</p>
     <pre><code>x[i+1] = x[i] - d[i] &middot; y[i] &middot; 2^(-i)
@@ -215,7 +303,23 @@ z[i+1] = z[i] - d[i] &middot; atan(2^(-i))</code></pre>
 
     <p>Those atan(2^-i) values are fixed for a given number of iterations (here I used 15 iterations).</p>
 
-    <h2>A few problems</h2>
+    <p>Some papers draw the CORDIC datapath as a two-iteration-merged block instead of one shift per stage, to cut the iteration count in half. Here's what that looks like written out as paths instead of crossed wires:</p>
+
+    <pre><code>Stage inputs: x_i, y_i  (direction set by d_i)
+
+Shift paths:
+  x_i &gt;&gt; i         -----&gt; crosses over into the y output
+  x_i &gt;&gt; (2i+1)    -----&gt; feeds the y output directly
+  y_i &gt;&gt; i         -----&gt; crosses over into the x output
+  y_i &gt;&gt; (2i+1)    -----&gt; feeds the x output directly
+
+Combine (sign chosen by d_i):
+  x_(i+1) = x_i  (+/-) (y_i &gt;&gt; i)  (+/-) (y_i &gt;&gt; (2i+1))
+  y_(i+1) = y_i  (+/-) (x_i &gt;&gt; i)  (+/-) (x_i &gt;&gt; (2i+1))</code></pre>
+
+    <p>This is a faster but heavier variant &mdash; twice the adders per stage, in exchange for half the clock cycles. My design doesn't use this; it sticks to a single shift by i per stage, one clock cycle per iteration, since the whole point was minimizing LUTs, not cycles.</p>
+
+    <h2 id="problems">A few problems</h2>
     <p>Each of these rotations actually increases the length of the vector to some extent, because it is not a "pure rotation." Eventually, this increase converges to a constant value, which depends only on the number of iterations and not on the angle. The vector length is scaled appropriately at the beginning by the K factor, so that the final length is exactly 1.0 (and the divider is avoided).</p>
 
     <p>For 15 iterations, this K factor works out to about 0.6072. Since I'm not doing floating point anywhere in this design, I converted that into fixed point (Q1.15) upfront and hardcoded it as <code>K_FACTOR = 19898</code> &mdash; that's just 0.6072 &times; 32768, rounded off. So instead of computing this constant every time, I just start the vector at that length and let the 15 rotations grow it back out to 1.0 by the end.</p>
@@ -228,14 +332,26 @@ z[i+1] = z[i] - d[i] &middot; atan(2^(-i))</code></pre>
 
     <p>The iterative approach was used due to area optimization goals. One rotation stage iterated 15 times takes about the number of LUTs of <em>one</em> rotation stage, plus the small state machine and the counter for iterating. Unrolling takes about 15 times more than this, since each rotation stage needs its own shifter, adder, and hardcoded atan constant.</p>
 
-    <h2>SPI Interface</h2>
+    <h2 id="architecture">Architecture</h2>
+    <pre><code>   RP2040                         FPGA (iCE40 UP5K)
+ +----------+                  +--------------------------+
+ |          |   angle (SPI)    |                          |
+ |          | ---------------> |   SPI target             |
+ |  MCU     |                  |   (shift reg, CS/SCK)    |
+ |  host    |                  |          |               |
+ |          |   cos + sin      |          v               |
+ |          | <--------------- |   CORDIC circular        |
+ |          |                  |   (shift-add rotation)   |
+ +----------+                  +--------------------------+</code></pre>
+
+    <h2 id="spi-interface">SPI Interface</h2>
     <p>The RP2040 and FPGA exchange data using two consecutive 16-bit SPI transactions for each query: one transmits the angle, and the other retrieves the cosine of the angle, followed by the sine. However, the SPI interface operates in full-duplex mode; hence, it is theoretically possible to send the current angle and receive the result at once. The problem here is that, due to the 15 cycles of latency required by the CORDIC core to compute the result, the result will correspond to the previous angle, not the current one.</p>
 
     <p>The easiest solution in this case is to send the angle, discard the result, and send the very same angle once again:</p>
     <pre><code>queryCordic(angle, c_cos, c_sin);
 queryCordic(angle, c_cos, c_sin);</code></pre>
 
-    <h2>Design issues I ran into</h2>
+    <h2 id="design-issues">Design issues I ran into</h2>
     <p>Internally, I kept x, y, and z as 18-bit signed values, 2 bits wider than the 16-bit input/output. That headroom is needed because of the quadrant pre-rotation step: for angles outside &plusmn;90&deg;, the vector starts partway rotated by &plusmn;90&deg; before the main loop even begins, and that pre-rotation can briefly push x or y slightly past what fits cleanly in 16 bits.</p>
 
     <p>Initially, what I did was clamp the output directly from 18-bit to 16-bit instead of saturation. This became an issue when dealing with the boundary angles at quadrants (90&deg;, 180&deg;, 270&deg;), where the truncated result would switch signs rather than clip to max. So I resorted to using a saturation function, which takes into account the signed 16-bit range of the 18-bit value.</p>
@@ -254,7 +370,7 @@ queryCordic(angle, c_cos, c_sin);</code></pre>
         <figcaption>After the saturation fix &mdash; error back in the noise floor</figcaption>
     </figure>
 
-    <h2>Results</h2>
+    <h2 id="results">Results</h2>
     <p>Here's the actual output from the test firmware, comparing the FPGA's CORDIC result against the actual values.</p>
 
     <pre><code>Angle | CORDIC Cos | Actual Cos | Cos Error | CORDIC Sin | Actual Sin | Sin Error
@@ -270,7 +386,7 @@ queryCordic(angle, c_cos, c_sin);</code></pre>
 
     <p>This is perfectly in tune with the results that one would expect after 15 iterations on a 16-bit fixed-point output &mdash; every iteration cuts down the error by half, so by the end of 15 iterations, one is working within the noise floor of the fixed-point system itself.</p>
 
-    <h2>Resource Utilization</h2>
+    <h2 id="resource-utilization">Resource Utilization</h2>
     <table>
         <tr><th>Resource</th><th>Used</th><th>Available (UP5K)</th><th>% Used</th></tr>
         <tr><td>LUTs (ICESTORM_LC)</td><td>777</td><td>5280</td><td>14%</td></tr>
@@ -283,7 +399,10 @@ queryCordic(angle, c_cos, c_sin);</code></pre>
 
     <p>777 LUTs out of 5280 &mdash; just under 15% of the UP5K, with zero DSP blocks.</p>
 
-    <h2>Repo</h2>
+    <h2 id="what-next">What next</h2>
+    <p>Right now I'm looking at picking up ASIC design next. The plan is to take this same RTL, run it through an open-source ASIC flow, and see how the area and timing numbers compare against what nextpnr reported for the FPGA build.</p>
+
+    <h2 id="repo">Repo</h2>
     <p>Full RTL, firmware, and pin constraints are here: <a href="https://github.com/hardik1975/soan-papdi-examples/tree/main/05-cordic" target="_blank" rel="noopener">soan-papdi-examples/05-cordic</a></p>
 
     <div class="footer-nav">
