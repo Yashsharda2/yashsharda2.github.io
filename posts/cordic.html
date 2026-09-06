@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORDIC on FPGA — Yash Sharda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bitcount+Single+Regular&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --border: #e8e8e8;
+            --accent: #cc0000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Courier New", Courier, monospace;
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 2.5rem 1.5rem;
+        }
+
+        .container {
+            max-width: 660px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .back-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        .post-date {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .post-title {
+            font-family: "Bungee", sans-serif;
+            font-size: 26px;
+            font-weight: 400;
+            line-height: 1.4;
+            margin-bottom: 2.5rem;
+            color: var(--text);
+        }
+
+        h2 {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 20px;
+            font-weight: 400;
+            margin-top: 2.75rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.85;
+            color: var(--text);
+            margin-bottom: 1.25rem;
+            text-align: justify;
+            text-justify: inter-word;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background: #fafafa;
+            border: 1px solid var(--border);
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        pre {
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13.5px;
+            line-height: 1.6;
+            white-space: pre;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 13.5px;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.55rem 0.7rem;
+            text-align: left;
+        }
+
+        th {
+            font-weight: bold;
+            background: #fafafa;
+        }
+
+        .table-caption {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            font-weight: bold;
+        }
+
+        figure {
+            margin: 1.5rem 0;
+        }
+
+        figure img {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: block;
+        }
+
+        figcaption {
+            font-size: 13px;
+            color: var(--text);
+            margin-top: 0.6rem;
+            text-align: center;
+        }
+
+        .footer-nav {
+            margin-top: 3.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <a class="back-link" href="../index.html">&larr; Back</a>
+        <span class="post-date">Sep 2026</span>
+    </header>
+
+    <h1 class="post-title">CORDIC on FPGA</h1>
+
+    <h2>CORDIC</h2>
+    <p>If we want sine and cosine on an FPGA, the easiest way is a lookup table, maybe combined with linear interpolation, etc. That works, but requires a lot of LUTs and DSP slices for the interpolation math. Which is fine if you have an FPGA with a large number of LUTs, but not the best when you work with resource-constrained FPGAs. I was working with the SOAN PAPDI board, which is based on the iCE40 UP5K with 5280 LUTs, and only 8 DSP blocks, and I wanted this thing to eventually run on FPGAs even smaller, like the Shrike Lite with just 1120 LUTs.</p>
+
+    <p>There comes CORDIC: it stands for COordinate Rotation DIgital Computer, invented by Jack E. Volder in 1959 to replace analog resolvers in the B-58 bomber's navigation computer, which needed fast sine/cosine and vector rotations with no floating-point hardware in sight. It computes trigonometric, hyperbolic, and mathematical functions.</p>
+
+    <p>The greatest benefit of the CORDIC algorithm is the small size of the FPGA needed for its implementation. All that is needed for CORDIC to operate is a small table, along with the shift and add operations. Moreover, no multipliers or dividers are required by the algorithm.</p>
+
+    <p class="table-caption">Table 1: CORDIC configurations and mode</p>
+    <table>
+        <tr><th>Coordinate System</th><th>Rotation Mode</th><th>Vectoring Mode</th></tr>
+        <tr><td>Circular</td><td>Computes sin(&theta;) and cos(&theta;) &mdash; rotates the vector by a given angle</td><td>Computes vector magnitude and atan(y/x) &mdash; rotates the vector to the x-axis</td></tr>
+        <tr><td>Linear</td><td>Computes multiplication (x&middot;y)</td><td>Computes division (x/y)</td></tr>
+        <tr><td>Hyperbolic</td><td>Computes sinh(&theta;) and cosh(&theta;)</td><td>Computes atanh(y/x), and combined with linear mode, sqrt(x)</td></tr>
+    </table>
+
+    <p>I worked only with a circular coordinate system, rotation mode, since all I needed was sine and cosine of a given angle.</p>
+
+    <h2>Inside CORDIC</h2>
+    <p>Starts by taking an initial vector of a certain length lying along the x-axis and turning it bit by bit until it reaches the desired angle; the x-component of the vector becomes the cosine, and the y-component becomes the sine.</p>
+
+    <p>Each rotation step follows this update:</p>
+    <pre><code>x[i+1] = x[i] - d[i] &middot; y[i] &middot; 2^(-i)
+y[i+1] = y[i] + d[i] &middot; x[i] &middot; 2^(-i)
+z[i+1] = z[i] - d[i] &middot; atan(2^(-i))</code></pre>
+
+    <p>In the formula above, d[i] is the sign of the turn (+1 or &minus;1, according to the sign of the residual angle z[i]), while 2^(-i) is the constant that transforms a rotation into a simple shift rather than a multiplication. z is nothing but a counter of "how much angle is left to be rotated" &mdash; it decreases from the initial angle down to zero in a series of atan steps.</p>
+
+    <p>Those atan(2^-i) values are fixed for a given number of iterations (here I used 15 iterations).</p>
+
+    <h2>A few problems</h2>
+    <p>Each of these rotations actually increases the length of the vector to some extent, because it is not a "pure rotation." Eventually, this increase converges to a constant value, which depends only on the number of iterations and not on the angle. The vector length is scaled appropriately at the beginning by the K factor, so that the final length is exactly 1.0 (and the divider is avoided).</p>
+
+    <p>For 15 iterations, this K factor works out to about 0.6072. Since I'm not doing floating point anywhere in this design, I converted that into fixed point (Q1.15) upfront and hardcoded it as <code>K_FACTOR = 19898</code> &mdash; that's just 0.6072 &times; 32768, rounded off. So instead of computing this constant every time, I just start the vector at that length and let the 15 rotations grow it back out to 1.0 by the end.</p>
+
+    <p>Circular-rotation mode CORDIC will only converge within a range of roughly &plusmn;99.7 degrees, which is the summation of all the angles contained in the look-up table. If the angle is fed outside this range, the vector will never get to its destination. The fix is folding the angle back into range using trig identities.</p>
+
+    <p>Accuracy scales with iterations (serial, one stage reused) or stages (parallel, unrolled). Roughly, n bits of output precision need about n iterations. That's why 15 iterations get comfortably within a few LSBs of error on a 16-bit output.</p>
+
+    <p>There are two approaches to implement this hardware. One is what I have done: one physical instance of a CORDIC rotation stage &mdash; the shifter, adder, and comparators &mdash; which is iterated 15 times over 15 clock cycles by a state machine using the lookup table. The second approach is the unrolling of the loop &mdash; building 15 physical instances of the rotation stage and connecting them one by one, so that the angle goes through them combinationally.</p>
+
+    <p>The iterative approach was used due to area optimization goals. One rotation stage iterated 15 times takes about the number of LUTs of <em>one</em> rotation stage, plus the small state machine and the counter for iterating. Unrolling takes about 15 times more than this, since each rotation stage needs its own shifter, adder, and hardcoded atan constant.</p>
+
+    <h2>SPI Interface</h2>
+    <p>The RP2040 and FPGA exchange data using two consecutive 16-bit SPI transactions for each query: one transmits the angle, and the other retrieves the cosine of the angle, followed by the sine. However, the SPI interface operates in full-duplex mode; hence, it is theoretically possible to send the current angle and receive the result at once. The problem here is that, due to the 15 cycles of latency required by the CORDIC core to compute the result, the result will correspond to the previous angle, not the current one.</p>
+
+    <p>The easiest solution in this case is to send the angle, discard the result, and send the very same angle once again:</p>
+    <pre><code>queryCordic(angle, c_cos, c_sin);
+queryCordic(angle, c_cos, c_sin);</code></pre>
+
+    <h2>Design issues I ran into</h2>
+    <p>Internally, I kept x, y, and z as 18-bit signed values, 2 bits wider than the 16-bit input/output. That headroom is needed because of the quadrant pre-rotation step: for angles outside &plusmn;90&deg;, the vector starts partway rotated by &plusmn;90&deg; before the main loop even begins, and that pre-rotation can briefly push x or y slightly past what fits cleanly in 16 bits.</p>
+
+    <p>Initially, what I did was clamp the output directly from 18-bit to 16-bit instead of saturation. This became an issue when dealing with the boundary angles at quadrants (90&deg;, 180&deg;, 270&deg;), where the truncated result would switch signs rather than clip to max. So I resorted to using a saturation function, which takes into account the signed 16-bit range of the 18-bit value.</p>
+
+    <p>Here's what it actually looked like. The error blows up to almost 2.0 right around 0&deg;, 90&deg;, and -90&deg; &mdash; that's the sign flip, since cos/sin should be near &plusmn;1 but the truncated value wraps to the opposite sign instead:</p>
+
+    <figure>
+        <img src="images/quadrant_bug.png" alt="Truncation bug at quadrant boundaries">
+        <figcaption>Truncation bug &mdash; error blows up near quadrant boundaries</figcaption>
+    </figure>
+
+    <p>After switching to the <code>sat()</code> function, the same angles come out clean, with error staying in the 0.00006&ndash;0.0002 range across all three boundaries:</p>
+
+    <figure>
+        <img src="images/quadrant_saturated.png" alt="Correct output after saturation fix">
+        <figcaption>After the saturation fix &mdash; error back in the noise floor</figcaption>
+    </figure>
+
+    <h2>Results</h2>
+    <p>Here's the actual output from the test firmware, comparing the FPGA's CORDIC result against the actual values.</p>
+
+    <pre><code>Angle | CORDIC Cos | Actual Cos | Cos Error | CORDIC Sin | Actual Sin | Sin Error
+32.0  | 0.8480     | 0.8480     | 0.00000   | 0.5300     | 0.5299     | 0.00010
+90.0  | 0.0000     | -0.0000    | 0.00000   | 1.0000     | 1.0000     | 0.00000
+9.0   | 0.9877     | 0.9877     | 0.00001   | 0.1564     | 0.1564     | 0.00003
+23.0  | 0.9205     | 0.9205     | 0.00004   | 0.3908     | 0.3907     | 0.00009
+89.0  | 0.0175     | 0.0175     | 0.00003   | 0.9998     | 0.9998     | 0.00003
+130.0 | -0.6428    | -0.6428    | 0.00005   | 0.7660     | 0.7660     | 0.00009
+270.0 | 0.0002     | 0.0000     | 0.00015   | -1.0000    | -1.0000    | 0.00003</code></pre>
+
+    <p>Worst-case error across all of these is around 0.00015 &mdash; well under a tenth of a percent.</p>
+
+    <p>This is perfectly in tune with the results that one would expect after 15 iterations on a 16-bit fixed-point output &mdash; every iteration cuts down the error by half, so by the end of 15 iterations, one is working within the noise floor of the fixed-point system itself.</p>
+
+    <h2>Resource Utilization</h2>
+    <table>
+        <tr><th>Resource</th><th>Used</th><th>Available (UP5K)</th><th>% Used</th></tr>
+        <tr><td>LUTs (ICESTORM_LC)</td><td>777</td><td>5280</td><td>14%</td></tr>
+        <tr><td>Block RAM</td><td>0</td><td>30</td><td>0%</td></tr>
+        <tr><td>DSP blocks</td><td>0</td><td>8</td><td>0%</td></tr>
+        <tr><td>I/O pins</td><td>6</td><td>96</td><td>6%</td></tr>
+        <tr><td>Global buffers</td><td>6</td><td>8</td><td>75%</td></tr>
+        <tr><td>Max frequency</td><td>28.32 MHz</td><td>24 MHz target</td><td>PASS</td></tr>
+    </table>
+
+    <p>777 LUTs out of 5280 &mdash; just under 15% of the UP5K, with zero DSP blocks.</p>
+
+    <h2>Repo</h2>
+    <p>Full RTL, firmware, and pin constraints are here: <a href="https://github.com/hardik1975/soan-papdi-examples/tree/main/05-cordic" target="_blank" rel="noopener">soan-papdi-examples/05-cordic</a></p>
+
+    <div class="footer-nav">
+        <a class="back-link" href="../index.html">&larr; Back to home</a>
+    </div>
+
+</div>
+
+</body>
+</html>
