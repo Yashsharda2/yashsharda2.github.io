@@ -111,13 +111,15 @@
             text-decoration: underline;
         }
 
-        .about-text p {
+         .about-text p {
             font-size: 15px;
             line-height: 1.85;
             color: var(--text);
             margin-bottom: 1.4rem;
+            text-align: justify;
+            text-justify: inter-word;
         }
-
+ 
         .about-text p:last-child {
             margin-bottom: 0;
         }
@@ -130,24 +132,24 @@
             margin-bottom: 1.75rem;
         }
 
-        .now-section-title {
+         .now-section-title {
             font-size: 15px;
             font-weight: bold;
             margin-bottom: 0.75rem;
             margin-top: 2.25rem;
             color: var(--text);
         }
-
+ 
         .now-section-title:first-of-type {
             margin-top: 0;
         }
 
-        .now-project {
+       .now-project {
             border-left: 2px solid var(--text);
             padding-left: 1.25rem;
             margin-bottom: 0.5rem;
         }
-
+ 
         .now-project-title {
             font-family: "Bitcount Single Regular", monospace;
             font-size: 17px;
@@ -155,35 +157,37 @@
             margin-bottom: 0.5rem;
             color: var(--text);
         }
-
+ 
         .now-project-desc {
             font-size: 15px;
             color: var(--text);
             line-height: 1.85;
+            text-align: justify;
+            text-justify: inter-word;
         }
-
+ 
         .now-project-desc a {
             color: var(--accent);
             text-decoration: none;
         }
-
+ 
         .now-project-desc a:hover {
             text-decoration: underline;
         }
-
+ 
         .now-extra {
             font-size: 14px;
             color: var(--text);
             line-height: 1.7;
             margin-top: 1.5rem;
         }
-
+ 
         .wishlist {
             margin-top: 3rem;
             padding-top: 1.75rem;
             border-top: 1px solid var(--border);
         }
-
+ 
         .wishlist-heading {
             font-family: "Bitcount Single Regular", monospace;
             font-size: 22px;
@@ -191,14 +195,14 @@
             color: var(--text);
             margin-bottom: 1.25rem;
         }
-
+ 
         .wishlist-items {
             list-style: none;
             display: flex;
             flex-direction: column;
             gap: 0.6rem;
         }
-
+ 
         .wishlist-items li {
             font-size: 14px;
             color: var(--text);
@@ -206,7 +210,7 @@
             align-items: baseline;
             gap: 0.6rem;
         }
-
+ 
         .wishlist-items li::before {
             content: "—";
             color: var(--border);
