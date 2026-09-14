@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canny Edge Detection on FPGA — Yash Sharda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bitcount+Single+Regular&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --border: #e8e8e8;
+            --accent: #cc0000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Courier New", Courier, monospace;
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 2.5rem 1.5rem;
+        }
+
+        .container {
+            max-width: 660px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .back-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            opacity: 0.7;
+        }
+
+        .post-date {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .post-title {
+            font-family: "Bungee", sans-serif;
+            font-size: 26px;
+            font-weight: 400;
+            line-height: 1.4;
+            margin-bottom: 0.6rem;
+            color: var(--text);
+        }
+
+        .byline {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 2.5rem;
+        }
+
+        h2 {
+            font-family: "Bitcount Single Regular", monospace;
+            font-size: 20px;
+            font-weight: 400;
+            margin-top: 2.75rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+            scroll-margin-top: 1.5rem;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 15.5px;
+            margin-top: 1.6rem;
+            margin-bottom: 0.6rem;
+            color: var(--accent);
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.85;
+            color: var(--text);
+            margin-bottom: 1.25rem;
+            text-align: justify;
+            text-justify: inter-word;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background: #fafafa;
+            border: 1px solid var(--border);
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        pre {
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13.5px;
+            line-height: 1.6;
+            white-space: pre;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 13.5px;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.55rem 0.7rem;
+            text-align: left;
+        }
+
+        th {
+            font-weight: bold;
+            background: #fafafa;
+        }
+
+        figure {
+            margin: 1.5rem 0;
+        }
+
+        figure img,
+        figure video {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: block;
+            min-height: 160px;
+            background: #fafafa;
+        }
+
+        figcaption {
+            font-size: 13px;
+            color: var(--text);
+            margin-top: 0.6rem;
+            text-align: center;
+        }
+
+        .img-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .img-row figure {
+            flex: 1 1 220px;
+            margin: 0;
+        }
+
+        .toc {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.1rem 1.4rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .toc-title {
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .toc-title::-webkit-details-marker {
+            display: none;
+        }
+
+        .toc-title::before {
+            content: "▶ ";
+            font-size: 11px;
+        }
+
+        details[open] .toc-title::before {
+            content: "▼ ";
+        }
+
+        .toc ol {
+            list-style: decimal;
+            padding-left: 1.1rem;
+            margin-top: 0.9rem;
+        }
+
+        .toc li {
+            font-size: 14px;
+            margin-bottom: 0.35rem;
+        }
+
+        .toc a {
+            color: var(--text);
+        }
+
+        .toc a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        /* Architecture diagram */
+        .arch {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.4rem 1rem;
+            margin: 1.5rem 0 2rem 0;
+            background: #fafafa;
+        }
+
+        .arch-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .arch-box {
+            background: var(--accent);
+            color: #fff;
+            padding: 0.5rem 0.7rem;
+            border-radius: 7px;
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.3;
+            min-width: 100px;
+        }
+
+        .arch-arrow {
+            font-size: 15px;
+            color: var(--text);
+        }
+
+        .arch-down {
+            text-align: center;
+            font-size: 16px;
+            margin: 0.2rem 0;
+            color: var(--text);
+        }
+
+        .arch-pipeline {
+            border: 2px dashed #ccc;
+            border-radius: 9px;
+            padding: 0.9rem 0.5rem 0.6rem 0.5rem;
+            margin: 0.6rem 0;
+        }
+
+        .arch-label {
+            font-size: 11px;
+            text-align: center;
+            opacity: 0.65;
+            margin-top: 0.4rem;
+        }
+
+        .kernel-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .kernel-block {
+            text-align: center;
+        }
+
+        .kernel-block table {
+            width: auto;
+            margin: 0 auto 0.4rem auto;
+        }
+
+        .kernel-block td {
+            text-align: center;
+            width: 34px;
+        }
+
+        .kernel-label {
+            font-size: 12.5px;
+            color: var(--text);
+            opacity: 0.75;
+        }
+
+        .stage-box {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .stage-box h3 {
+            margin-top: 0;
+        }
+
+        .footer-nav {
+            margin-top: 3.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Fix list justification */
+        ol, ul {
+            margin-bottom: 1.25rem;
+            padding-left: 1.4rem;
+        }
+
+        ol li, ul li {
+            margin-bottom: 0.3rem;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <a class="back-link" href="../index.html">&larr; Back</a>
+        <span class="post-date">Sep 2026</span>
+    </header>
+
+    <h1 class="post-title">Canny Edge Detection on FPGA</h1>
+    <p class="byline">By Yash Sharda</p>
+
+    <details class="toc">
+        <summary class="toc-title">Table of contents</summary>
+        <ol>
+            <li><a href="#intro">Overview</a></li>
+            <li><a href="#system">How the pieces fit together</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#netlist">Netlist</a></li>
+            <li><a href="#pipeline">The five pipeline stages</a></li>
+            <li><a href="#problems">Problems I ran into</a></li>
+            <li><a href="#data">Moving data in and out</a></li>
+            <li><a href="#results">Results</a></li>
+            <li><a href="#resources">Resource usage</a></li>
+            <li><a href="#repo">Repo</a></li>
+        </ol>
+    </details>
+
+    <h2 id="intro">Overview</h2>
+    <p>I got the full Canny edge detector running on Soan Papdi FPGA (iCE40 UP5K). An RP2040 feeds it a test image over a simple parallel bus and pulls the edges back out, one pixel per clock. No VGA, no framebuffer, no camera — just a binary file in, edges out, and a small screen showing the result.</p>
+
+    <p>Canny is usually taught as five separate passes over a whole image in memory: blur, find gradients, thin them, threshold, then connect the weak edges to strong ones. On hardware you don’t need to keep a full frame around. Every stage can work on a pixel the moment it arrives and hand the result straight to the next stage. So the whole thing becomes one continuous pipeline. A pixel goes in one end of the chip and a few clocks later an answer (edge or not) comes out the other end.</p>
+
+    <h2 id="system">How the pieces fit together</h2>
+    <p>On the PC side take any photo, resize it to 320×240, convert it to grayscale, and store raw bytes into a file called <code>input.bin</code>.</p>
+
+    <p>That file goes onto the RP2040. The RP2040 streams those bytes, one pixel at a time, over a plain 8-bit parallel bus into the FPGA and collects the single-bit answers that come back. It also packs those bits into another binary file (<code>output_edge.bin</code>) and pushes the same bits straight to the spi display .</p>
+
+    <p>Inside the iCE40 the image never sits in a full frame buffer. It flows through five pipeline stages in order:</p>
+
+    <ol>
+        <li>Gaussian blur</li>
+        <li>Sobel gradient</li>
+        <li>Non-maximum suppression</li>
+        <li>Double threshold</li>
+        <li>Hysteresis edge tracking</li>
+    </ol>
+
+    <p>A pixel goes in, gets processed by every stage, and an edge/no-edge decision comes out a fixed number of clocks later.</p>
+
+    <!-- Architecture diagram -->
+    <div class="arch" id="architecture">
+<svg width="100%" viewBox="0 0 580 666" style="display:block;margin:0 auto;">
+<rect x="215" y="10" width="150" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="28.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Test image (PC)</text>
+<path d="M290,46 C 296,54.666666666666664 284,63.33333333333333 290,72" fill="none" stroke="#1D9E75" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="200" y="72" width="180" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="90.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Resize + grayscale</text>
+<path d="M290,108 C 296,116.66666666666667 284,125.33333333333333 290,134" fill="none" stroke="#BA7517" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="190" y="134" width="200" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="152.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">input.bin on RP2040</text>
+<path d="M290,170 C 296,187.33333333333334 284,204.66666666666666 290,222" fill="none" stroke="#7F77DD" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="60" y="192" width="460" height="330" rx="14" fill="none" stroke="#cccccc" stroke-width="1.3" stroke-dasharray="5 4"/>
+<text x="290" y="214" text-anchor="middle" fill="#333333" font-size="13" font-weight="700">FPGA</text>
+<rect x="180" y="222" width="220" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="240.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Gaussian blur</text>
+<path d="M290,258 C 296,266.6666666666667 284,275.3333333333333 290,284" fill="none" stroke="#D4537E" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="180" y="284" width="220" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="302.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Sobel gradient</text>
+<path d="M290,320 C 296,328.6666666666667 284,337.3333333333333 290,346" fill="none" stroke="#D85A30" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="180" y="346" width="220" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="364.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Non-max suppression</text>
+<path d="M290,382 C 296,390.6666666666667 284,399.3333333333333 290,408" fill="none" stroke="#1D9E75" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="180" y="408" width="220" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="426.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Double threshold</text>
+<path d="M290,444 C 296,452.6666666666667 284,461.3333333333333 290,470" fill="none" stroke="#BA7517" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="180" y="470" width="220" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="488.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">Hysteresis edge tracking</text>
+<path d="M290,506 C 296,520.0 284,534.0 290,548" fill="none" stroke="#7F77DD" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="215" y="548" width="150" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="290.0" y="566.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">RP2040</text>
+<line x1="290" y1="584" x2="125" y2="610" stroke="#D4537E" stroke-width="1.6"/>
+<line x1="290" y1="584" x2="455" y2="610" stroke="#D85A30" stroke-width="1.6"/>
+<rect x="40" y="610" width="170" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="125.0" y="628.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">output_edge.bin</text>
+<rect x="370" y="610" width="170" height="36" rx="8" fill="#fbeee7" stroke="#e3a898" stroke-width="1.2"/>
+<text x="455.0" y="628.0" text-anchor="middle" dominant-baseline="middle" fill="#7a3020" font-size="12.5" font-weight="600">ST7789 display</text>
+</svg>
+    </div>
+
+    <p id="netlist">Here's what the synthesized design actually looks like at the gate level:</p>
+    <figure>
+        <img src="images/canny_netlist.png" alt="Netlist">
+        <figcaption>Netlist</figcaption>
+    </figure>
+
+    <h2 id="pipeline">The five pipeline stages</h2>
+
+    <div class="stage-box">
+        <h3>1. Gaussian Blur</h3>
+        <p>Edge detectors hate noise. A single noisy pixel can look like a tiny edge. So the first stage softly blurs the image with a 3×3 kernel:</p>
+        <div class="kernel-wrap">
+            <div class="kernel-block">
+                <table>
+                    <tr><td>1</td><td>2</td><td>1</td></tr>
+                    <tr><td>2</td><td>4</td><td>2</td></tr>
+                    <tr><td>1</td><td>2</td><td>1</td></tr>
+                </table>
+                <div class="kernel-label">3×3 kernel, then divide by 16</div>
+            </div>
+        </div>
+        <p>This smooths out random noise before the real edge finding starts. The cost is a tiny loss of sharpness on real edges, but it’s worth it. The divide by 16 is free in hardware — just a right-shift.</p>
+    </div>
+
+    <div class="stage-box">
+        <h3>2. Sobel Gradient</h3>
+        <p>This is where edges are actually detected. Two small kernels look at the same 3×3 window — one finds horizontal changes (Gx), the other finds vertical changes (Gy).</p>
+        <div class="kernel-wrap">
+            <div class="kernel-block">
+                <table>
+                    <tr><td>-1</td><td>0</td><td>1</td></tr>
+                    <tr><td>-2</td><td>0</td><td>2</td></tr>
+                    <tr><td>-1</td><td>0</td><td>1</td></tr>
+                </table>
+                <div class="kernel-label">Gx</div>
+            </div>
+            <div class="kernel-block">
+                <table>
+                    <tr><td>1</td><td>2</td><td>1</td></tr>
+                    <tr><td>0</td><td>0</td><td>0</td></tr>
+                    <tr><td>-1</td><td>-2</td><td>-1</td></tr>
+                </table>
+                <div class="kernel-label">Gy</div>
+            </div>
+        </div>
+        <p>The strength of the edge is roughly <code>|Gx| + |Gy|</code> (Manhattan approximation the real magnitude). The direction of the edge (horizontal, vertical, or diagonal) comes from the ratio of Gx to Gy. That direction is needed for the next stage.</p>
+    </div>
+
+    <div class="stage-box">
+        <h3>3. Non-maximum suppression</h3>
+        <p>Sobel alone produces thick, blurry ridges instead of clean lines. This stage thins them. For every pixel it looks at the two neighbors that sit along the gradient direction. It only keeps the center pixel if it is stronger than both neighbors. Everything else is set to zero. Done right, a wide ridge collapses into a single-pixel-wide line.</p>
+    </div>
+
+    <div class="stage-box">
+        <h3>4. Double threshold</h3>
+        <p>Every surviving pixel is sorted into one of three buckets using two thresholds:</p>
+        <ul>
+            <li>Strong → definitely an edge</li>
+            <li>Weak → maybe an edge</li>
+            <li>Below both thresholds → discarded</li>
+        </ul>
+        <p>Choosing the two numbers is mostly trial and error. Too low and you keep noise; too high and you lose faint but real edges.</p>
+    </div>
+
+    <div class="stage-box">
+        <h3>5. Hysteresis (edge tracking)</h3>
+        <p>This is the last step. Every weak pixel is checked: if it is touching a strong edge pixel, it gets promoted to a real edge. If it is isolated, it is thrown away. This rescues the faint parts of real edges while still killing random noise.</p>
+    </div>
+
+    <h2 id="problems">Problems I ran into</h2>
+    <p>The pipeline itself was the easy part. Getting it to produce clean, one-pixel-wide edges and talking to the RP2040 cleanly took more work.</p>
+
+    <h3>Thick edges instead of thin ones</h3>
+    <p>The first version that worked end-to-end matched a software Canny almost perfectly — except the edges were wide. Issue was the direction calculation in the Sobel stage.</p>
+    <p>To decide whether an edge is horizontal, vertical or diagonal you compare the ratio of Gx and Gy against two angles (roughly 22.5° and 67.5°). I first tried to approximate those thresholds with bit-shifts just to not use DSP blocks. The approximation was just inaccurate enough that non-maximum suppression kept looking at the wrong neighbours, so real edges never got properly thinned.</p>
+    <p>The UP5K has eight hardware multipliers so i used them:</p>
+    <pre><code>// Q12 fixed-point
+threshold_low  = (abs_gx * 1697) >> 12;   // ≈ 0.4142
+threshold_high = (abs_gx * 9890) >> 12;   // ≈ 2.4142</code></pre>
+    <p>After that change the edges snapped to single-pixel width and matched the software reference almost bit-for-bit.</p>
+
+    <div class="img-row">
+        <figure>
+            <img src="images/canny_thick.png" alt="Thick edges before the direction fix">
+            <figcaption>Before — thick edges (shift approximation)</figcaption>
+        </figure>
+        <figure>
+            <img src="images/canny_clean.png" alt="Clean single-pixel edges after the fix">
+            <figcaption>After — one-pixel edges (exact direction math)</figcaption>
+        </figure>
+    </div>
+
+    <h3>Getting data in and out was harder than the algorithm</h3>
+    <p>SPI looked like the obvious choice — only four wires. But It didn’t work. The pipeline can accept a new pixel every clock. SPI shifting one bit at a time simply couldn’t keep up. The hard SPI peripheral on the UP5K also needed more setup than I wanted, and a soft version built in fabric was unreliable.</p>
+    <p>At the same time the 512×512 test image was too big. The RP2040 has to hold both the input grayscale and the output edge map in RAM at once, and that size cant fit.</p>
+    <p>The solution solved both problems at once. I resized the image to 320×240 — the native resolution of the ST7789 display I already had. That reduced the memory requirement. With the smaller image I switched to a simple parallel bus: 8 data lines + 1 clock + 1 result line. One clock moves a whole pixel in and a result bit out. It was both faster and easier to get working. By luck the FPGA board had exactly 10 GPIOs.</p>
+
+    <h3>Wrong latency on the first try</h3>
+    <p>When I first captured the output on the RP2040 I guessed the pipeline latency and got it wrong by about 4000 cycles. Each line-buffer stage was independently waiting for two full rows of real pixels before producing anything.</p>
+    <p>The fix was to change the line buffers so they pad the first couple of rows and columns with replicated border pixels instead of waiting. The delay dropped to a small, fixed, and easy-to-verify number of cycles.</p>
+    <p>Those three issues (direction math, data movement, and latency) were the main practical headaches.</p>
+
+    <h2 id="data">Moving the image in and the edges out</h2>
+    <p>Both directions use plain binary files.</p>
+    <p><code>input.bin</code> is just the resized grayscale image: 320 × 240 bytes, one byte per pixel, stored row by row with no header at all. The RP2040 loads it into RAM once and then streams it out over the parallel bus, one byte (one pixel) per clock.</p>
+    <p>Coming back the other way, every pixel from the FPGA is only a single bit — edge or not. The RP2040 shifts eight of those bits into one byte before writing them out, so <code>output_edge.bin</code> ends up only 9,600 bytes for the whole image. The same bits are also sent straight to the ST7789 display as they arrive, so the file on disk and the picture on the screen are always identical.</p>
+
+    <h2 id="results">Results</h2>
+    <div class="img-row">
+        <figure>
+            <img src="images/canny_input.png" alt="Input test image, grayscale, 320x240">
+            <figcaption>Input — resized and grayscaled, 320×240</figcaption>
+        </figure>
+        <figure>
+            <img src="images/canny_output.png" alt="Clean edge output from the FPGA, 320x240">
+            <figcaption>Output — edges from the FPGA, 320×240</figcaption>
+        </figure>
+    </div>
+
+    <figure>
+        <video src="images/canny_display.mp4" controls playsinline></video>
+        <figcaption>ST7789 showing the live output</figcaption>
+    </figure>
+
+    <h2 id="resources">Resource usage on the UP5K</h2>
+    <table>
+        <tr><th>Resource</th><th>Used</th><th>Available</th><th>% Used</th></tr>
+        <tr><td>LUTs</td><td>1633</td><td>5280</td><td>30%</td></tr>
+        <tr><td>Block RAM</td><td>9</td><td>30</td><td>30%</td></tr>
+        <tr><td>DSP blocks</td><td>2</td><td>8</td><td>25%</td></tr>
+        <tr><td>SPRAM</td><td>0</td><td>4</td><td>0%</td></tr>
+        <tr><td>I/O pins</td><td>10</td><td>96</td><td>10%</td></tr>
+        <tr><td>Global buffers</td><td>6</td><td>8</td><td>75%</td></tr>
+        <tr><td>Max frequency</td><td colspan="3">48.14 MHz</td></tr>
+    </table>
+    <p>Under a third of the logic, a third of the block RAM, and only two of the eight DSP blocks. Plenty of headroom left.</p>
+
+    <h2 id="repo">Repo</h2>
+    <p>Full RTL, firmware, and pin constraints: <a href="https://github.com/hardik1975/soan-papdi-examples/tree/main/06-Canny-edge-detection" target="_blank" rel="noopener">soan-papdi-examples/06-Canny-edge-detection</a></p>
+
+    <div class="footer-nav">
+        <a class="back-link" href="../index.html">&larr; Back to home</a>
+    </div>
+
+</div>
+
+</body>
+</html>
